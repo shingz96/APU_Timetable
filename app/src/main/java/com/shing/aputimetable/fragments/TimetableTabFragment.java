@@ -1,4 +1,4 @@
-package com.shing.aputimetable.Fragments;
+package com.shing.aputimetable.fragments;
 
 
 import android.os.Bundle;
@@ -12,10 +12,10 @@ import com.shing.aputimetable.R;
 /**
  * A simple {@link Fragment} subclass.
  */
-public class TimetableFragment extends Fragment {
+public class TimetableTabFragment extends Fragment {
 
 
-    public TimetableFragment() {
+    public TimetableTabFragment() {
         // Required empty public constructor
     }
 
@@ -24,7 +24,7 @@ public class TimetableFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_timetable, container, false);
+        return inflater.inflate(R.layout.fragment_timetable_tab, container, false);
     }
 
 }
