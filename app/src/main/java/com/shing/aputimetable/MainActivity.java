@@ -10,13 +10,16 @@ import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 
-import com.shing.aputimetable.Fragments.TimetableFragment;
-import com.shing.aputimetable.Fragments.TodayclassFragment;
+import com.shing.aputimetable.fragments.TimetableFragment;
+import com.shing.aputimetable.fragments.TodayclassFragment;
 
 public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
+
+    private final String TAG = MainActivity.class.getSimpleName();
 
     private final Handler mDrawerHandler = new Handler();
     private Toolbar mToolbar;
@@ -81,14 +84,18 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     private void navigate(int id) {
         selectedDrawerItem = id;
         mNavigationView.setCheckedItem(id);
+
         switch (id) {
             case R.id.item_timetable_fragment:
-                displayFragment(new TimetableFragment(), "timetable");
+                if (getSupportFragmentManager().findFragmentByTag("timetable") == null)
+                    displayFragment(new TimetableFragment(), "timetable");
                 break;
             case R.id.item_todayclass_fragment:
-                displayFragment(new TodayclassFragment(), "todayclass");
+                if (getSupportFragmentManager().findFragmentByTag("todayclass") == null)
+                    displayFragment(new TodayclassFragment(), "todayclass");
                 break;
         }
+        Log.d(TAG, "navigate");
 
     }
 
