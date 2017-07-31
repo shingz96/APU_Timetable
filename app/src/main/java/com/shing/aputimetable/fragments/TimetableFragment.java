@@ -1,6 +1,5 @@
 package com.shing.aputimetable.fragments;
 
-
 import android.os.Bundle;
 import android.support.design.widget.TabLayout;
 import android.support.v4.app.Fragment;
@@ -36,7 +35,17 @@ public class TimetableFragment extends Fragment {
         mTabLayout = view.findViewById(R.id.tab);
         mViewPager = view.findViewById(R.id.timetable_container);
 
-        addFragmentsToViewPager(mViewPager);
+        //add fragments to adapter
+        TimetableTabAdapter adapter = new TimetableTabAdapter(getChildFragmentManager());
+        for (int i = 0; i < 5; i++) {
+            TimetableTabFragment tab = new TimetableTabFragment();
+            Bundle b = new Bundle();
+            b.putInt("day", i);
+            tab.setArguments(b);
+            adapter.addFragment(tab, MyDateUtils.getDayFromNum(i));
+        }
+
+        mViewPager.setAdapter(adapter);
         mTabLayout.setupWithViewPager(mViewPager);
 
         return view;
@@ -46,15 +55,6 @@ public class TimetableFragment extends Fragment {
     public void onStart() {
         super.onStart();
         getActivity().setTitle("Timetable - " + MyDateUtils.formatDate(MyDateUtils.getMondayDate(), "MMM, dd"));
-    }
-
-    private void addFragmentsToViewPager(ViewPager viewPager) {
-        TimetableTabAdapter adapter = new TimetableTabAdapter(getChildFragmentManager());
-        for (int i = 1; i <= 5; i++) {
-            TimetableTabFragment tab = new TimetableTabFragment();
-            adapter.addFragment(tab, MyDateUtils.getDayFromNum(i));
-        }
-        viewPager.setAdapter(adapter);
     }
 
 }
