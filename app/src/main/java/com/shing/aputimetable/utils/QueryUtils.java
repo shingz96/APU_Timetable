@@ -1,6 +1,12 @@
 package com.shing.aputimetable.utils;
 
+import android.content.ContentValues;
+import android.content.Context;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
+
 import com.shing.aputimetable.entity.ApuClass;
+import com.shing.aputimetable.model.ApuClassContract.ApuClassEntry;
 
 import java.util.ArrayList;
 
@@ -16,14 +22,14 @@ public class QueryUtils {
      * @param intake Intake code
      * @return array list that contain of all classes
      */
-    public static ArrayList getAllClass(String intake) {
+    public static ArrayList getAllClass(String intake, Context context) {
         String date = MyDateUtils.formatDate(MyDateUtils.getMondayDate(), "yyyy-MM-dd");
         String url = String.format("http://webspace.apiit.edu.my/intake-timetable/intake-result.php?week=%s&intake_Search_Week=%s&selectIntakeAll=", date, intake.toUpperCase());
 
         try {
             String html = makeHttpRequest(url);
             String content = getTimetableContent(html);
-            return extractClass(content);
+            return extractClass(content, context);
         } catch (Exception ex) {
             System.out.println("Error extracting timetable: - no timetable found for this week!");
         }
@@ -61,7 +67,7 @@ public class QueryUtils {
      * @param html Html source code that contain of timetable content
      * @return {@link ArrayList} array list that contain of all classes
      */
-    private static ArrayList extractClass(String html) {
+    private static ArrayList extractClass(String html, Context context) {
         ArrayList<String> classes = findAllByTag(html, "tr");
         ArrayList<ApuClass> allClassDetails = new ArrayList<>();
         for (String eachClass : classes) {
@@ -74,6 +80,22 @@ public class QueryUtils {
             c.setLocation(classDetails.get(3).trim());
             c.setSubject(classDetails.get(4).trim());
             c.setLecturer(classDetails.get(5).trim());
+
+            //delete previous data
+            //context.getContentResolver().delete(ApuClassEntry.CONTENT_URI, null, null);
+
+            //add to database
+            ContentValues values = new ContentValues();
+            values.put(ApuClassEntry.COLUMN_CLASS_DATE, c.getDate());
+            values.put(ApuClassEntry.COLUMN_CLASS_DAY, c.getDay());
+            values.put(ApuClassEntry.COLUMN_CLASS_TIME, c.getTime());
+            values.put(ApuClassEntry.COLUMN_CLASS_ROOM, c.getRoom());
+            values.put(ApuClassEntry.COLUMN_CLASS_LOCATION, c.getLocation());
+            values.put(ApuClassEntry.COLUMN_CLASS_SUBJECT, c.getSubject());
+            values.put(ApuClassEntry.COLUMN_CLASS_LECTURER, c.getLecturer());
+            context.getContentResolver().insert(ApuClassEntry.CONTENT_URI, values);
+
+
             allClassDetails.add(c);
         }
         return allClassDetails;
@@ -115,5 +137,16 @@ public class QueryUtils {
             html = html.substring(endIndex + 2 + tag.length() + 1);//+3 open closing slash </>
         }
         return extract;
+    }
+
+    public static boolean isNetworkConnected(Context context) {
+        // Get a reference to the ConnectivityManager to check state of network connectivity
+        ConnectivityManager connMgr = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+
+        // Get details on the currently active default data network
+        NetworkInfo networkInfo = connMgr.getActiveNetworkInfo();
+
+        // If there is a network connection, fetch data
+        return networkInfo != null && networkInfo.isConnected();
     }
 }
