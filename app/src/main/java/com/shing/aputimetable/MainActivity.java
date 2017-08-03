@@ -39,7 +39,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         setupNavigationDrawer();
 
         if (savedInstanceState == null) {
-            selectedDrawerItem = R.id.item_timetable_fragment;
+            selectedDrawerItem = R.id.item_todayclass_fragment;
             navigate(selectedDrawerItem);
             mNavigationView.setCheckedItem(selectedDrawerItem);
         }

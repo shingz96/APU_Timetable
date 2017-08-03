@@ -3,13 +3,13 @@
 
     <group android:checkableBehavior="single">
         <item
-            android:id="@+id/item_timetable_fragment"
-            android:icon="@drawable/ic_todayclass"
-            android:title="Timetable" />
-        <item
             android:id="@+id/item_todayclass_fragment"
             android:icon="@drawable/ic_todayclass"
             android:title="Today Class" />
+        <item
+            android:id="@+id/item_timetable_fragment"
+            android:icon="@drawable/ic_todayclass"
+            android:title="Timetable" />
     </group>
 
     <group android:checkableBehavior="none">

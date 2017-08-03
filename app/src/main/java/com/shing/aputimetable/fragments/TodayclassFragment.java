@@ -17,9 +17,11 @@ import android.widget.Toast;
 import com.shing.aputimetable.R;
 import com.shing.aputimetable.adapters.ClassDetailsAdapter;
 import com.shing.aputimetable.entity.ApuClass;
+import com.shing.aputimetable.model.ApuClassContract;
 import com.shing.aputimetable.model.ApuClassLoader;
 import com.shing.aputimetable.model.Database;
 import com.shing.aputimetable.utils.MyDateUtils;
+import com.shing.aputimetable.utils.QueryUtils;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -86,6 +88,7 @@ public class TodayclassFragment extends Fragment implements LoaderManager.Loader
         if (todayClass == null || todayClass.isEmpty()) {
             mRecyclerview.setVisibility(View.GONE);
             mEmptyTextView.setVisibility(View.VISIBLE);
+            mEmptyTextView.setText("No Class Found");
         } else {
             mRecyclerview.setVisibility(View.VISIBLE);
             classDetailsAdapter.setDataset(todayClass);
@@ -100,8 +103,16 @@ public class TodayclassFragment extends Fragment implements LoaderManager.Loader
 
     @Override
     public void onRefresh() {
-        getLoaderManager().restartLoader(APU_CLASS_LOADER_ID, null, this);
-        Toast.makeText(getContext(), "Refreshed", Toast.LENGTH_SHORT).show();
+        String toastText;
+        if (QueryUtils.isNetworkConnected(getContext())) {
+            //delete previous data
+            getContext().getContentResolver().delete(ApuClassContract.ApuClassEntry.CONTENT_URI, null, null);
+            getLoaderManager().restartLoader(APU_CLASS_LOADER_ID, null, this);
+            toastText = "Refreshed";
+        } else {
+            toastText = "No Network!";
+        }
+        Toast.makeText(getContext(), toastText, Toast.LENGTH_SHORT).show();
         mSwipeRefreshLayout.setRefreshing(false);
     }
 }
