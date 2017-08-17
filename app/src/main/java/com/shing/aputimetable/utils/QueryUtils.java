@@ -4,6 +4,7 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.util.Log;
 
 import com.shing.aputimetable.entity.ApuClass;
 import com.shing.aputimetable.model.ApuClassContract.ApuClassEntry;
@@ -23,6 +24,7 @@ public class QueryUtils {
      * @return array list that contain of all classes
      */
     public static ArrayList getAllClass(String intake, Context context) {
+        Log.d("QueryUtils", "getAllClass");
         String date = MyDateUtils.formatDate(MyDateUtils.getMondayDate(), "yyyy-MM-dd");
         String url = String.format("http://webspace.apiit.edu.my/intake-timetable/intake-result.php?week=%s&intake_Search_Week=%s&selectIntakeAll=", date, intake.toUpperCase());
 
@@ -80,9 +82,6 @@ public class QueryUtils {
             c.setLocation(classDetails.get(3).trim());
             c.setSubject(classDetails.get(4).trim());
             c.setLecturer(classDetails.get(5).trim());
-
-            //delete previous data
-            //context.getContentResolver().delete(ApuClassEntry.CONTENT_URI, null, null);
 
             //add to database
             ContentValues values = new ContentValues();
