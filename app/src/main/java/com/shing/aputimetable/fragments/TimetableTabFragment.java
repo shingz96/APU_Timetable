@@ -1,26 +1,35 @@
 package com.shing.aputimetable.fragments;
 
 
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.Loader;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.shing.aputimetable.DataChangeEvent;
 import com.shing.aputimetable.R;
 import com.shing.aputimetable.adapters.ClassDetailsAdapter;
 import com.shing.aputimetable.entity.ApuClass;
-import com.shing.aputimetable.model.ApuClassContract.ApuClassEntry;
+import com.shing.aputimetable.model.ApuClassContract;
 import com.shing.aputimetable.model.ApuClassLoader;
 import com.shing.aputimetable.model.Database;
 import com.shing.aputimetable.utils.QueryUtils;
+
+import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
+import org.greenrobot.eventbus.ThreadMode;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,6 +46,7 @@ public class TimetableTabFragment extends Fragment implements LoaderManager.Load
     private TextView mEmptyTextView;
     private ClassDetailsAdapter classDetailsAdapter;
     private SwipeRefreshLayout mSwipeRefreshLayout;
+    private SharedPreferences prefs;
 
     public TimetableTabFragment() {
         // Required empty public constructor
@@ -58,6 +68,8 @@ public class TimetableTabFragment extends Fragment implements LoaderManager.Load
         mRecyclerview.setLayoutManager(layoutManager);
         mRecyclerview.setAdapter(classDetailsAdapter);
 
+        prefs = PreferenceManager.getDefaultSharedPreferences(getContext());
+
         LoaderManager loaderManager = getLoaderManager();
         loaderManager.initLoader(APU_CLASS_LOADER_ID, null, this);
         return view;
@@ -65,21 +77,26 @@ public class TimetableTabFragment extends Fragment implements LoaderManager.Load
 
     @Override
     public Loader<List<ApuClass>> onCreateLoader(int id, Bundle args) {
-        return new ApuClassLoader(getContext(), "uc3f1702se");
+        String intake = prefs.getString("intake_code", null);
+        Log.d(TAG, "Loader Create " + getArguments().getInt("day"));
+        return new ApuClassLoader(getContext(), intake);
     }
 
     @Override
     public void onLoadFinished(Loader<List<ApuClass>> loader, List<ApuClass> data) {
+        Log.d(TAG, "onLoadFinished " + getArguments().getInt("day"));
         Database.clearAll();
         Database db = Database.getDatabaseInstance();
         db.initData(data);
-
+        classDetailsAdapter.setDataset(null);
+        classDetailsAdapter.notifyDataSetChanged();
         List todayClass = db.getDataByDay(getArguments().getInt("day"));
         if (todayClass == null || todayClass.isEmpty()) {
             mRecyclerview.setVisibility(View.GONE);
             mEmptyTextView.setVisibility(View.VISIBLE);
             mEmptyTextView.setText("No Class Found");
         } else {
+            mEmptyTextView.setVisibility(View.GONE);
             mRecyclerview.setVisibility(View.VISIBLE);
             classDetailsAdapter.setDataset(todayClass);
             classDetailsAdapter.notifyDataSetChanged();
@@ -88,7 +105,9 @@ public class TimetableTabFragment extends Fragment implements LoaderManager.Load
 
     @Override
     public void onLoaderReset(Loader<List<ApuClass>> loader) {
-
+        Log.d(TAG, "onLoaderReset " + getArguments().getInt("day"));
+        classDetailsAdapter.setDataset(null);
+        classDetailsAdapter.notifyDataSetChanged();
     }
 
     @Override
@@ -96,13 +115,52 @@ public class TimetableTabFragment extends Fragment implements LoaderManager.Load
         String toastText;
         if (QueryUtils.isNetworkConnected(getContext())) {
             //delete previous data
-            getContext().getContentResolver().delete(ApuClassEntry.CONTENT_URI, null, null);
-            getLoaderManager().restartLoader(APU_CLASS_LOADER_ID, null, this);
+            Thread t = new Thread(new Runnable() {
+
+                @Override
+                public void run() {
+                    try {
+                        getActivity().getContentResolver().delete(ApuClassContract.ApuClassEntry.CONTENT_URI, null, null);
+                        QueryUtils.getAllClass(prefs.getString("intake_code", ""), getActivity());
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            });
+            t.start();
+            try {
+                t.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            EventBus.getDefault().post(new DataChangeEvent());
             toastText = "Refreshed";
         } else {
             toastText = "No Network!";
         }
         Toast.makeText(getContext(), toastText, Toast.LENGTH_SHORT).show();
         mSwipeRefreshLayout.setRefreshing(false);
+    }
+
+    @Override
+    public void onAttach(Context context) {
+        Log.d(TAG, "onAttach " + getArguments().getInt("day"));
+        super.onAttach(context);
+        EventBus.getDefault().register(this);
+    }
+
+    @Override
+    public void onDestroy() {
+        Log.d(TAG, "onDestroy " + getArguments().getInt("day"));
+        super.onDestroy();
+        EventBus.getDefault().unregister(this);
+    }
+
+    @Subscribe(threadMode = ThreadMode.POSTING)
+    public void onMessageEvent(DataChangeEvent event) {
+        Log.d(TAG, "onSharedPreferenceChanged " + getArguments().getInt("day"));
+        classDetailsAdapter.setDataset(null);
+        classDetailsAdapter.notifyDataSetChanged();
+        getLoaderManager().restartLoader(APU_CLASS_LOADER_ID, null, this);
     }
 }

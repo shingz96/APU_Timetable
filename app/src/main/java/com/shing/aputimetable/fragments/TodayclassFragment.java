@@ -1,19 +1,24 @@
 package com.shing.aputimetable.fragments;
 
 
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.Loader;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.shing.aputimetable.DataChangeEvent;
 import com.shing.aputimetable.R;
 import com.shing.aputimetable.adapters.ClassDetailsAdapter;
 import com.shing.aputimetable.entity.ApuClass;
@@ -22,6 +27,10 @@ import com.shing.aputimetable.model.ApuClassLoader;
 import com.shing.aputimetable.model.Database;
 import com.shing.aputimetable.utils.MyDateUtils;
 import com.shing.aputimetable.utils.QueryUtils;
+
+import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
+import org.greenrobot.eventbus.ThreadMode;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -39,6 +48,7 @@ public class TodayclassFragment extends Fragment implements LoaderManager.Loader
     private TextView mEmptyTextView;
     private SwipeRefreshLayout mSwipeRefreshLayout;
     private ClassDetailsAdapter classDetailsAdapter;
+    private SharedPreferences prefs;
 
     public TodayclassFragment() {
         // Required empty public constructor
@@ -60,6 +70,8 @@ public class TodayclassFragment extends Fragment implements LoaderManager.Loader
         mRecyclerview.setLayoutManager(layoutManager);
         mRecyclerview.setAdapter(classDetailsAdapter);
 
+        prefs = PreferenceManager.getDefaultSharedPreferences(getContext());
+
         LoaderManager loaderManager = getLoaderManager();
         loaderManager.initLoader(APU_CLASS_LOADER_ID, null, this);
 
@@ -69,13 +81,15 @@ public class TodayclassFragment extends Fragment implements LoaderManager.Loader
     @Override
     public void onStart() {
         super.onStart();
-        getActivity().setTitle("Today Class - " + MyDateUtils.formatDate(new Date(), "MMM, dd"));
+        getActivity().setTitle(prefs.getString("intake_code", "") + " " + MyDateUtils.formatDate(new Date(), "EEE, MMM dd"));
     }
 
 
     @Override
     public Loader<List<ApuClass>> onCreateLoader(int id, Bundle args) {
-        return new ApuClassLoader(getContext(), "uc3f1702se");
+        String intake = prefs.getString("intake_code", null);
+        Log.d(TAG, "Loader Create ");
+        return new ApuClassLoader(getContext(), intake);
     }
 
     @Override
@@ -83,13 +97,15 @@ public class TodayclassFragment extends Fragment implements LoaderManager.Loader
         Database.clearAll();
         Database db = Database.getDatabaseInstance();
         db.initData(data);
-
+        classDetailsAdapter.setDataset(null);
+        classDetailsAdapter.notifyDataSetChanged();
         List todayClass = db.getDataByDay(MyDateUtils.getTodayIndex());
         if (todayClass == null || todayClass.isEmpty()) {
             mRecyclerview.setVisibility(View.GONE);
             mEmptyTextView.setVisibility(View.VISIBLE);
             mEmptyTextView.setText("No Class Found");
         } else {
+            mEmptyTextView.setVisibility(View.GONE);
             mRecyclerview.setVisibility(View.VISIBLE);
             classDetailsAdapter.setDataset(todayClass);
             classDetailsAdapter.notifyDataSetChanged();
@@ -99,6 +115,8 @@ public class TodayclassFragment extends Fragment implements LoaderManager.Loader
 
     @Override
     public void onLoaderReset(Loader<List<ApuClass>> loader) {
+        classDetailsAdapter.setDataset(null);
+        classDetailsAdapter.notifyDataSetChanged();
     }
 
     @Override
@@ -106,13 +124,53 @@ public class TodayclassFragment extends Fragment implements LoaderManager.Loader
         String toastText;
         if (QueryUtils.isNetworkConnected(getContext())) {
             //delete previous data
-            getContext().getContentResolver().delete(ApuClassContract.ApuClassEntry.CONTENT_URI, null, null);
-            getLoaderManager().restartLoader(APU_CLASS_LOADER_ID, null, this);
+            Thread t = new Thread(new Runnable() {
+
+                @Override
+                public void run() {
+                    try {
+                        getActivity().getContentResolver().delete(ApuClassContract.ApuClassEntry.CONTENT_URI, null, null);
+                        QueryUtils.getAllClass(prefs.getString("intake_code", ""), getActivity());
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            });
+            t.start();
+            try {
+                t.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            getLoaderManager().restartLoader(APU_CLASS_LOADER_ID, new Bundle(), this);
             toastText = "Refreshed";
         } else {
             toastText = "No Network!";
         }
         Toast.makeText(getContext(), toastText, Toast.LENGTH_SHORT).show();
         mSwipeRefreshLayout.setRefreshing(false);
+    }
+
+    @Override
+    public void onAttach(Context context) {
+        Log.d(TAG, "onAttach " + getArguments().getInt("day"));
+        super.onAttach(context);
+        EventBus.getDefault().register(this);
+    }
+
+    @Override
+    public void onDestroy() {
+        Log.d(TAG, "onDestroy " + getArguments().getInt("day"));
+        super.onDestroy();
+        EventBus.getDefault().unregister(this);
+    }
+
+    @Subscribe(threadMode = ThreadMode.POSTING)
+    public void onMessageEvent(DataChangeEvent event) {
+        Log.d(TAG, "onSharedPreferenceChanged " + getArguments().getInt("day"));
+        classDetailsAdapter.setDataset(null);
+        classDetailsAdapter.notifyDataSetChanged();
+        getActivity().setTitle(prefs.getString("intake_code", "") + " " + MyDateUtils.formatDate(new Date(), "EEE, MMM dd"));
+        getLoaderManager().restartLoader(APU_CLASS_LOADER_ID, null, this);
     }
 }
