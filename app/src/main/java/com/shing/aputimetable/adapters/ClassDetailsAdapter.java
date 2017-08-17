@@ -47,7 +47,7 @@ public class ClassDetailsAdapter extends RecyclerView.Adapter<ClassDetailsAdapte
 
     @Override
     public int getItemCount() {
-        return mClassDataset.size();
+        return mClassDataset == null ? 0 : mClassDataset.size();
     }
 
     class ClassDetailsHolder extends RecyclerView.ViewHolder {
