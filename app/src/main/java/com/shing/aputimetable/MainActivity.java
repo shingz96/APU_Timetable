@@ -1,7 +1,11 @@
 package com.shing.aputimetable;
 
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.database.Cursor;
 import android.os.Bundle;
 import android.os.Handler;
+import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.design.widget.NavigationView;
 import android.support.v4.app.Fragment;
@@ -10,24 +14,45 @@ import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Toast;
 
 import com.shing.aputimetable.fragments.TimetableFragment;
 import com.shing.aputimetable.fragments.TodayclassFragment;
+import com.shing.aputimetable.model.ApuClassContract;
+import com.shing.aputimetable.utils.MyDateUtils;
+import com.shing.aputimetable.utils.QueryUtils;
+
+import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
+import org.greenrobot.eventbus.ThreadMode;
+
+import java.util.Calendar;
 
 public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
 
     private final String TAG = MainActivity.class.getSimpleName();
 
     private final Handler mDrawerHandler = new Handler();
+    private final Handler checkHandler = new Handler();
     private Toolbar mToolbar;
     private DrawerLayout mDrawerLayout;
     private NavigationView mNavigationView;
     private int selectedDrawerItem;
+    private SharedPreferences prefs;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
+        prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        boolean useDarkTheme = prefs.getBoolean("dark_theme", false);
+
+        if (useDarkTheme) {
+            setTheme(R.style.AppTheme_Dark);
+        }
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
@@ -44,6 +69,85 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             mNavigationView.setCheckedItem(selectedDrawerItem);
         }
 
+        final Calendar cal = Calendar.getInstance();
+        cal.set(Calendar.HOUR_OF_DAY, 0);
+        cal.set(Calendar.MINUTE, 0);
+        cal.set(Calendar.SECOND, 0);
+        cal.add(Calendar.DATE, 1);
+        final long timeInterval = cal.getTimeInMillis() - System.currentTimeMillis();
+
+        Log.d(TAG, "run shecdule task at " + cal.getTime().toString() + " still left " + timeInterval / 1000 / 60);
+        checkHandler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                Log.d(TAG, "shecdule task is run");
+                EventBus.getDefault().post(new DataChangeEvent());
+            }
+        }, timeInterval);
+
+        String intake = prefs.getString("intake_code", "");
+        long last_update_msec = prefs.getLong("last_update", 0);
+        Calendar last_update_date = Calendar.getInstance();
+        last_update_date.setTimeInMillis(last_update_msec);
+        Calendar today = Calendar.getInstance();
+        boolean sameDay = last_update_date.get(Calendar.YEAR) == today.get(Calendar.YEAR) &&
+                last_update_date.get(Calendar.DAY_OF_YEAR) == today.get(Calendar.DAY_OF_YEAR);
+
+        if (!intake.equals("") && !sameDay) {
+            checkHandler.post(new Runnable() {
+                @Override
+                public void run() {
+                    String[] projection = {
+                            ApuClassContract.ApuClassEntry._ID,
+                            ApuClassContract.ApuClassEntry.COLUMN_CLASS_DAY,
+                            ApuClassContract.ApuClassEntry.COLUMN_CLASS_DATE,
+                            ApuClassContract.ApuClassEntry.COLUMN_CLASS_TIME,
+                            ApuClassContract.ApuClassEntry.COLUMN_CLASS_ROOM,
+                            ApuClassContract.ApuClassEntry.COLUMN_CLASS_LOCATION,
+                            ApuClassContract.ApuClassEntry.COLUMN_CLASS_SUBJECT,
+                            ApuClassContract.ApuClassEntry.COLUMN_CLASS_LECTURER
+                    };
+
+                    Cursor cursor = getContentResolver().query(ApuClassContract.ApuClassEntry.CONTENT_URI, projection, ApuClassContract.ApuClassEntry.COLUMN_CLASS_DATE + "=?", new String[]{MyDateUtils.formatDate(MyDateUtils.getMondayDate(), "dd-MMM-YYYY")}, null);
+                    if (cursor != null && cursor.moveToFirst()) {
+                        Log.d(TAG, "ald have");
+                        cursor.close();
+                    } else {
+                        Log.d(TAG, "refreshed");
+                        getContentResolver().delete(ApuClassContract.ApuClassEntry.CONTENT_URI, null, null);
+                        String toastText;
+                        if (QueryUtils.isNetworkConnected(getApplicationContext())) {
+                            //delete previous data
+                            Thread t = new Thread(new Runnable() {
+
+                                @Override
+                                public void run() {
+                                    try {
+                                        QueryUtils.getAllClass(prefs.getString("intake_code", ""), getApplicationContext());
+                                    } catch (Exception e) {
+                                        e.printStackTrace();
+                                    }
+                                }
+                            });
+                            t.start();
+                            try {
+                                t.join();
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                            EventBus.getDefault().post(new DataChangeEvent());
+                            toastText = "Refreshed";
+                        } else {
+                            toastText = "No Network!";
+                        }
+                        Toast.makeText(getApplicationContext(), toastText, Toast.LENGTH_SHORT).show();
+                    }
+                    prefs.edit().putLong("last_update", System.currentTimeMillis()).apply();
+                }
+            });
+
+        }
+
     }
 
     @Override
@@ -55,7 +159,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     @Override
     protected void onRestoreInstanceState(Bundle savedInstanceState) {
         super.onRestoreInstanceState(savedInstanceState);
-        navigate(savedInstanceState.getInt("drawer"));
+        if (savedInstanceState.getInt("drawer") != R.id.item_settings_activity)
+            navigate(savedInstanceState.getInt("drawer"));
     }
 
     private void setupNavigationDrawer() {
@@ -93,6 +198,10 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 if (getSupportFragmentManager().findFragmentByTag("todayclass") == null)
                     displayFragment(new TodayclassFragment(), "todayclass");
                 break;
+            case R.id.item_settings_activity:
+                Intent i = new Intent(this, SettingsActivity.class);
+                startActivity(i);
+                break;
         }
 
     }
@@ -124,5 +233,26 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         } else {
             finish();
         }
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        if (!EventBus.getDefault().isRegistered(this)) {
+            EventBus.getDefault().register(this);
+        }
+
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        EventBus.getDefault().unregister(this);
+        checkHandler.removeCallbacksAndMessages(null);
+    }
+
+    @Subscribe(threadMode = ThreadMode.POSTING)
+    public void restartActivity(ReloadEvent event) {
+        recreate();
     }
 }
