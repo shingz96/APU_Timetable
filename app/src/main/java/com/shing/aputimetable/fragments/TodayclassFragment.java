@@ -153,21 +153,18 @@ public class TodayclassFragment extends Fragment implements LoaderManager.Loader
 
     @Override
     public void onAttach(Context context) {
-        Log.d(TAG, "onAttach " + getArguments().getInt("day"));
         super.onAttach(context);
         EventBus.getDefault().register(this);
     }
 
     @Override
     public void onDestroy() {
-        Log.d(TAG, "onDestroy " + getArguments().getInt("day"));
         super.onDestroy();
         EventBus.getDefault().unregister(this);
     }
 
     @Subscribe(threadMode = ThreadMode.POSTING)
     public void onMessageEvent(DataChangeEvent event) {
-        Log.d(TAG, "onSharedPreferenceChanged " + getArguments().getInt("day"));
         classDetailsAdapter.setDataset(null);
         classDetailsAdapter.notifyDataSetChanged();
         getActivity().setTitle(prefs.getString("intake_code", "") + " " + MyDateUtils.formatDate(new Date(), "EEE, MMM dd"));

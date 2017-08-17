@@ -144,14 +144,12 @@ public class TimetableTabFragment extends Fragment implements LoaderManager.Load
 
     @Override
     public void onAttach(Context context) {
-        Log.d(TAG, "onAttach " + getArguments().getInt("day"));
         super.onAttach(context);
         EventBus.getDefault().register(this);
     }
 
     @Override
     public void onDestroy() {
-        Log.d(TAG, "onDestroy " + getArguments().getInt("day"));
         super.onDestroy();
         EventBus.getDefault().unregister(this);
     }
