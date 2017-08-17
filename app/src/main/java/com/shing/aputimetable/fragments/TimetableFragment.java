@@ -54,7 +54,7 @@ public class TimetableFragment extends Fragment {
     @Override
     public void onStart() {
         super.onStart();
-        getActivity().setTitle("Timetable - " + MyDateUtils.formatDate(MyDateUtils.getMondayDate(), "MMM, dd"));
+        getActivity().setTitle("Timetable - Week of " + MyDateUtils.formatDate(MyDateUtils.getMondayDate(), "MMM, dd"));
     }
 
 }
