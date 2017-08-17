@@ -14,7 +14,7 @@
 
     <group android:checkableBehavior="none">
         <item
-            android:id="@+id/settings"
+            android:id="@+id/item_settings_activity"
             android:icon="@drawable/ic_settings"
             android:title="Settings" />
 
