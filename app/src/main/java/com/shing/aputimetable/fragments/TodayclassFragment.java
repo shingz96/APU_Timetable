@@ -33,6 +33,7 @@ import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
@@ -44,6 +45,8 @@ public class TodayclassFragment extends Fragment implements LoaderManager.Loader
 
     private static final int APU_CLASS_LOADER_ID = 1;
     private final String TAG = TodayclassFragment.class.getSimpleName();
+    private final String INTAKE_CODE_KEY = "intake_code";
+
     private RecyclerView mRecyclerview;
     private TextView mEmptyTextView;
     private SwipeRefreshLayout mSwipeRefreshLayout;
@@ -72,6 +75,12 @@ public class TodayclassFragment extends Fragment implements LoaderManager.Loader
 
         prefs = PreferenceManager.getDefaultSharedPreferences(getContext());
 
+        String intake = prefs.getString(INTAKE_CODE_KEY, null);
+        if (intake != null) {
+            mSwipeRefreshLayout.setEnabled(true);
+        } else {
+            mSwipeRefreshLayout.setEnabled(false);
+        }
         LoaderManager loaderManager = getLoaderManager();
         loaderManager.initLoader(APU_CLASS_LOADER_ID, null, this);
 
@@ -81,13 +90,13 @@ public class TodayclassFragment extends Fragment implements LoaderManager.Loader
     @Override
     public void onStart() {
         super.onStart();
-        getActivity().setTitle(prefs.getString("intake_code", "") + " " + MyDateUtils.formatDate(new Date(), "EEE, MMM dd"));
+        setTitleText();
     }
 
 
     @Override
     public Loader<List<ApuClass>> onCreateLoader(int id, Bundle args) {
-        String intake = prefs.getString("intake_code", null);
+        String intake = prefs.getString(INTAKE_CODE_KEY, null);
         Log.d(TAG, "Loader Create ");
         return new ApuClassLoader(getContext(), intake);
     }
@@ -130,7 +139,7 @@ public class TodayclassFragment extends Fragment implements LoaderManager.Loader
                 public void run() {
                     try {
                         getActivity().getContentResolver().delete(ApuClassContract.ApuClassEntry.CONTENT_URI, null, null);
-                        QueryUtils.getAllClass(prefs.getString("intake_code", ""), getActivity());
+                        QueryUtils.getAllClass(prefs.getString(INTAKE_CODE_KEY, ""), getActivity());
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
@@ -167,7 +176,28 @@ public class TodayclassFragment extends Fragment implements LoaderManager.Loader
     public void onMessageEvent(DataChangeEvent event) {
         classDetailsAdapter.setDataset(null);
         classDetailsAdapter.notifyDataSetChanged();
-        getActivity().setTitle(prefs.getString("intake_code", "") + " " + MyDateUtils.formatDate(new Date(), "EEE, MMM dd"));
+        setTitleText();
+        String intake = prefs.getString(INTAKE_CODE_KEY, null);
+        if (intake != null) {
+            mSwipeRefreshLayout.setEnabled(true);
+        } else {
+            mSwipeRefreshLayout.setEnabled(false);
+        }
         getLoaderManager().restartLoader(APU_CLASS_LOADER_ID, null, this);
+    }
+
+    private void setTitleText() {
+        Calendar cal = Calendar.getInstance();
+        Date date = cal.getTime();
+        if (cal.get(Calendar.DAY_OF_WEEK) == Calendar.SATURDAY || cal.get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY) {
+            date = MyDateUtils.getMondayDate();
+        }
+        StringBuilder titleStringBuilder = new StringBuilder();
+        titleStringBuilder.append(prefs.getString(INTAKE_CODE_KEY, ""));
+        if (!titleStringBuilder.toString().isEmpty()) {
+            titleStringBuilder.append(" - ");
+        }
+        titleStringBuilder.append(MyDateUtils.formatDate(date, "EEE, MMM dd"));
+        getActivity().setTitle(titleStringBuilder.toString());
     }
 }
