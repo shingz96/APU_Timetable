@@ -42,6 +42,7 @@ public class TimetableTabFragment extends Fragment implements LoaderManager.Load
 
     private static final int APU_CLASS_LOADER_ID = 1;
     private final String TAG = TimetableTabFragment.class.getSimpleName();
+    private final String INTAKE_CODE_KEY = "intake_code";
     private RecyclerView mRecyclerview;
     private TextView mEmptyTextView;
     private ClassDetailsAdapter classDetailsAdapter;
@@ -69,6 +70,12 @@ public class TimetableTabFragment extends Fragment implements LoaderManager.Load
         mRecyclerview.setAdapter(classDetailsAdapter);
 
         prefs = PreferenceManager.getDefaultSharedPreferences(getContext());
+        String intake = prefs.getString(INTAKE_CODE_KEY, null);
+        if (intake != null) {
+            mSwipeRefreshLayout.setEnabled(true);
+        } else {
+            mSwipeRefreshLayout.setEnabled(false);
+        }
 
         LoaderManager loaderManager = getLoaderManager();
         loaderManager.initLoader(APU_CLASS_LOADER_ID, null, this);
@@ -77,7 +84,7 @@ public class TimetableTabFragment extends Fragment implements LoaderManager.Load
 
     @Override
     public Loader<List<ApuClass>> onCreateLoader(int id, Bundle args) {
-        String intake = prefs.getString("intake_code", null);
+        String intake = prefs.getString(INTAKE_CODE_KEY, null);
         Log.d(TAG, "Loader Create " + getArguments().getInt("day"));
         return new ApuClassLoader(getContext(), intake);
     }
@@ -121,7 +128,7 @@ public class TimetableTabFragment extends Fragment implements LoaderManager.Load
                 public void run() {
                     try {
                         getActivity().getContentResolver().delete(ApuClassContract.ApuClassEntry.CONTENT_URI, null, null);
-                        QueryUtils.getAllClass(prefs.getString("intake_code", ""), getActivity());
+                        QueryUtils.getAllClass(prefs.getString(INTAKE_CODE_KEY, ""), getActivity());
                     } catch (Exception e) {
                         e.printStackTrace();
                     }

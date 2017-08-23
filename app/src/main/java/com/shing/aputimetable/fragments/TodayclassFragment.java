@@ -177,12 +177,6 @@ public class TodayclassFragment extends Fragment implements LoaderManager.Loader
         classDetailsAdapter.setDataset(null);
         classDetailsAdapter.notifyDataSetChanged();
         setTitleText();
-        String intake = prefs.getString(INTAKE_CODE_KEY, null);
-        if (intake != null) {
-            mSwipeRefreshLayout.setEnabled(true);
-        } else {
-            mSwipeRefreshLayout.setEnabled(false);
-        }
         getLoaderManager().restartLoader(APU_CLASS_LOADER_ID, null, this);
     }
 
