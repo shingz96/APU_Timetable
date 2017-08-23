@@ -47,6 +47,7 @@ public class TimetableFragment extends Fragment {
 
         mViewPager.setAdapter(adapter);
         mTabLayout.setupWithViewPager(mViewPager);
+        mViewPager.setCurrentItem(MyDateUtils.getTodayIndex());
 
         return view;
     }
