@@ -29,8 +29,8 @@ public class SettingsActivity extends AppCompatActivity {
             setTheme(R.style.AppTheme_Dark);
         }
         super.onCreate(savedInstanceState);
-
         setContentView(R.layout.activity_settings);
+
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         toolbar.setNavigationOnClickListener(new View.OnClickListener() {
@@ -39,13 +39,14 @@ public class SettingsActivity extends AppCompatActivity {
                 finish();
             }
         });
-        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-
+        if (getSupportActionBar() != null)
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        setTitle(R.string.settings_title);
         if (savedInstanceState == null) {
             getFragmentManager().beginTransaction().add(R.id.container, new SettingsFragment()).commit();
         }
-
     }
+
 
     public static class SettingsFragment extends PreferenceFragment implements SharedPreferences.OnSharedPreferenceChangeListener {
 

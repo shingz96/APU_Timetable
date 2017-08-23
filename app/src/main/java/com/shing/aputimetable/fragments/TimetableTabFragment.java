@@ -101,7 +101,7 @@ public class TimetableTabFragment extends Fragment implements LoaderManager.Load
         if (todayClass == null || todayClass.isEmpty()) {
             mRecyclerview.setVisibility(View.GONE);
             mEmptyTextView.setVisibility(View.VISIBLE);
-            mEmptyTextView.setText("No Class Found");
+            mEmptyTextView.setText(R.string.no_class_text);
         } else {
             mEmptyTextView.setVisibility(View.GONE);
             mRecyclerview.setVisibility(View.VISIBLE);
