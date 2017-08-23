@@ -18,10 +18,12 @@ import org.greenrobot.eventbus.EventBus;
 
 public class SettingsActivity extends AppCompatActivity {
 
+    private final String DARK_THEME_KEY = "dark_theme";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
-        boolean useDarkTheme = PreferenceManager.getDefaultSharedPreferences(this).getBoolean("dark_theme", false);
+        boolean useDarkTheme = PreferenceManager.getDefaultSharedPreferences(this).getBoolean(DARK_THEME_KEY, false);
 
         if (useDarkTheme) {
             setTheme(R.style.AppTheme_Dark);
@@ -47,6 +49,8 @@ public class SettingsActivity extends AppCompatActivity {
 
     public static class SettingsFragment extends PreferenceFragment implements SharedPreferences.OnSharedPreferenceChangeListener {
 
+        private final String INTAKE_CODE_KEY = "intake_code";
+        private final String DARK_THEME_KEY = "dark_theme";
         private SharedPreferences prefs;
 
         @Override
@@ -55,29 +59,23 @@ public class SettingsActivity extends AppCompatActivity {
             addPreferencesFromResource(R.xml.preferences);
             prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
 
-            EditTextPreference p = (EditTextPreference) findPreference("intake_code");
-            String intake = prefs.getString("intake_code", "");
+            EditTextPreference p = (EditTextPreference) findPreference(INTAKE_CODE_KEY);
+            String intake = prefs.getString(INTAKE_CODE_KEY, "");
             if (intake.equals("")) {
-                p.setSummary("Please provide your Intake Code");
+                p.setSummary(R.string.intake_code_summary);
             } else {
                 p.setSummary(intake);
             }
 
-//            findPreference("intake_code").setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
-//                public boolean onPreferenceClick(Preference preference) {
-//                    Toast.makeText(getActivity(),"clicked",Toast.LENGTH_SHORT).show();
-//                    return true;
-//                }
-//            });
-
-            findPreference("intake_code").setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
+            findPreference(INTAKE_CODE_KEY).setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
                 @Override
                 public boolean onPreferenceChange(Preference preference, Object o) {
                     Boolean save = true;
-                    if (false) {
+                    EditTextPreference p = (EditTextPreference) findPreference(INTAKE_CODE_KEY);
+                    if (p.getEditText().getText().toString().trim().isEmpty()) {
                         final AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
                         builder.setTitle("Invalid Input");
-                        builder.setMessage("Something's gone wrong...");
+                        builder.setMessage("Empty Intake Code Is Not Allow!");
                         builder.setPositiveButton(android.R.string.ok, null);
                         builder.show();
                         save = false;
@@ -103,11 +101,11 @@ public class SettingsActivity extends AppCompatActivity {
         @Override
         public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
             switch (key) {
-                case "dark_theme":
+                case DARK_THEME_KEY:
                     getActivity().recreate();
                     EventBus.getDefault().post(new ReloadEvent());
                     break;
-                case "intake_code":
+                case INTAKE_CODE_KEY:
                     EditTextPreference p = (EditTextPreference) findPreference(key);
                     p.setText(p.getText().toUpperCase());
                     p.setSummary(p.getText());
@@ -116,7 +114,7 @@ public class SettingsActivity extends AppCompatActivity {
                         public void run() {
                             try {
                                 getActivity().getContentResolver().delete(ApuClassContract.ApuClassEntry.CONTENT_URI, null, null);
-                                QueryUtils.getAllClass(prefs.getString("intake_code", ""), getActivity());
+                                QueryUtils.getAllClass(prefs.getString(INTAKE_CODE_KEY, ""), getActivity());
                             } catch (Exception e) {
                                 e.printStackTrace();
                             }
@@ -129,6 +127,7 @@ public class SettingsActivity extends AppCompatActivity {
                         e.printStackTrace();
                     }
                     EventBus.getDefault().post(new DataChangeEvent());
+
                     break;
             }
         }
