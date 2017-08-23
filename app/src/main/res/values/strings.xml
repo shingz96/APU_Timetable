@@ -6,4 +6,12 @@
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
 
+    <!-- Setting Preference -->
+    <string name="intake_code_summary">Please provide your intake code</string>
+    <string name="intake_code_title">Intake Code</string>
+    <string name="intake_code_key">intake_code</string>
+    <string name="dark_theme_summary">Switch to Dark Theme</string>
+    <string name="dark_theme_title">Dark Theme</string>
+    <string name="dark_theme_key">dark_theme</string>
+
 </resources>
