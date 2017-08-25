@@ -80,7 +80,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         cal.add(Calendar.DATE, 1);
         final long timeInterval = cal.getTimeInMillis() - System.currentTimeMillis();
 
-        Log.d(TAG, "run shecdule task at " + cal.getTime().toString() + " still left " + timeInterval / 1000 / 60);
+        Log.d(TAG, "run shecdule task at " + cal.getTime().toString() + " still left " + (timeInterval / 1000) / 60 + " mins");
         checkHandler.postDelayed(new Runnable() {
             @Override
             public void run() {
@@ -288,7 +288,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                             @Override
                             public void onInput(@NonNull MaterialDialog dialog, CharSequence input) {
                                 if (input.toString().trim().length() > 7) {
-
+                                    dialog.getContentView().setText("Can be reset in Settings if needed");
                                     dialog.getActionButton(DialogAction.POSITIVE).setEnabled(true);
                                 } else {
                                     dialog.getContentView().setText(R.string.invalid_intake_code_warning);
@@ -302,9 +302,12 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                     public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
                         prefs.edit().putString(INTAKE_CODE_KEY, dialog.getInputEditText().getText().toString().trim().toUpperCase()).apply();
                         requestNewTimetable();
+                        View todayClassFragmentView = getSupportFragmentManager().findFragmentByTag("todayclass").getView();
+                        if (todayClassFragmentView != null) {
+                            todayClassFragmentView.findViewById(R.id.swipe_refresh_layout_class).setEnabled(true);
+                        }
                     }
                 })
                 .show();
-
     }
 }
