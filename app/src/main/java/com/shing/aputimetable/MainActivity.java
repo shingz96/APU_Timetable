@@ -14,11 +14,14 @@ import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.text.InputType;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
 
+import com.afollestad.materialdialogs.DialogAction;
+import com.afollestad.materialdialogs.MaterialDialog;
 import com.shing.aputimetable.fragments.TimetableFragment;
 import com.shing.aputimetable.fragments.TodayclassFragment;
 import com.shing.aputimetable.model.ApuClassContract;
@@ -37,6 +40,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
     private final Handler mDrawerHandler = new Handler();
     private final Handler checkHandler = new Handler();
+    private final String INTAKE_CODE_KEY = "intake_code";
+    private final String DARK_THEME_KEY = "dark_theme";
     private Toolbar mToolbar;
     private DrawerLayout mDrawerLayout;
     private NavigationView mNavigationView;
@@ -45,9 +50,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-
         prefs = PreferenceManager.getDefaultSharedPreferences(this);
-        boolean useDarkTheme = prefs.getBoolean("dark_theme", false);
+        boolean useDarkTheme = prefs.getBoolean(DARK_THEME_KEY, false);
 
         if (useDarkTheme) {
             setTheme(R.style.AppTheme_Dark);
@@ -85,7 +89,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             }
         }, timeInterval);
 
-        String intake = prefs.getString("intake_code", "");
+        String intake = prefs.getString(INTAKE_CODE_KEY, "");
         long last_update_msec = prefs.getLong("last_update", 0);
         Calendar last_update_date = Calendar.getInstance();
         last_update_date.setTimeInMillis(last_update_msec);
@@ -93,59 +97,10 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         boolean sameDay = last_update_date.get(Calendar.YEAR) == today.get(Calendar.YEAR) &&
                 last_update_date.get(Calendar.DAY_OF_YEAR) == today.get(Calendar.DAY_OF_YEAR);
 
-        if (!intake.equals("") && !sameDay) {
-            checkHandler.post(new Runnable() {
-                @Override
-                public void run() {
-                    String[] projection = {
-                            ApuClassContract.ApuClassEntry._ID,
-                            ApuClassContract.ApuClassEntry.COLUMN_CLASS_DAY,
-                            ApuClassContract.ApuClassEntry.COLUMN_CLASS_DATE,
-                            ApuClassContract.ApuClassEntry.COLUMN_CLASS_TIME,
-                            ApuClassContract.ApuClassEntry.COLUMN_CLASS_ROOM,
-                            ApuClassContract.ApuClassEntry.COLUMN_CLASS_LOCATION,
-                            ApuClassContract.ApuClassEntry.COLUMN_CLASS_SUBJECT,
-                            ApuClassContract.ApuClassEntry.COLUMN_CLASS_LECTURER
-                    };
-
-                    Cursor cursor = getContentResolver().query(ApuClassContract.ApuClassEntry.CONTENT_URI, projection, ApuClassContract.ApuClassEntry.COLUMN_CLASS_DATE + "=?", new String[]{MyDateUtils.formatDate(MyDateUtils.getMondayDate(), "dd-MMM-YYYY")}, null);
-                    if (cursor != null && cursor.moveToFirst()) {
-                        Log.d(TAG, "ald have");
-                        cursor.close();
-                    } else {
-                        Log.d(TAG, "refreshed");
-                        getContentResolver().delete(ApuClassContract.ApuClassEntry.CONTENT_URI, null, null);
-                        String toastText;
-                        if (QueryUtils.isNetworkConnected(getApplicationContext())) {
-                            //delete previous data
-                            Thread t = new Thread(new Runnable() {
-
-                                @Override
-                                public void run() {
-                                    try {
-                                        QueryUtils.getAllClass(prefs.getString("intake_code", ""), getApplicationContext());
-                                    } catch (Exception e) {
-                                        e.printStackTrace();
-                                    }
-                                }
-                            });
-                            t.start();
-                            try {
-                                t.join();
-                            } catch (InterruptedException e) {
-                                e.printStackTrace();
-                            }
-                            EventBus.getDefault().post(new DataChangeEvent());
-                            toastText = "Refreshed";
-                        } else {
-                            toastText = "No Network!";
-                        }
-                        Toast.makeText(getApplicationContext(), toastText, Toast.LENGTH_SHORT).show();
-                    }
-                    prefs.edit().putLong("last_update", System.currentTimeMillis()).apply();
-                }
-            });
-
+        if (intake.equals("")) {
+            showIntakeCodeEditTextDialog();
+        } else if (!sameDay) {
+            checkNewTimetable();
         }
 
     }
@@ -159,7 +114,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     @Override
     protected void onRestoreInstanceState(Bundle savedInstanceState) {
         super.onRestoreInstanceState(savedInstanceState);
-        if (savedInstanceState.getInt("drawer") != R.id.item_settings_activity)
+        if (savedInstanceState.getInt("drawer") != R.id.item_settings_activity && savedInstanceState.getInt("drawer") != R.id.item_about_activity)
             navigate(savedInstanceState.getInt("drawer"));
     }
 
@@ -199,8 +154,12 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                     displayFragment(new TodayclassFragment(), "todayclass");
                 break;
             case R.id.item_settings_activity:
-                Intent i = new Intent(this, SettingsActivity.class);
-                startActivity(i);
+                Intent settings = new Intent(this, SettingsActivity.class);
+                startActivity(settings);
+                break;
+            case R.id.item_about_activity:
+                Intent about = new Intent(this, AboutActivity.class);
+                startActivity(about);
                 break;
         }
 
@@ -254,5 +213,98 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     @Subscribe(threadMode = ThreadMode.POSTING)
     public void restartActivity(ReloadEvent event) {
         recreate();
+    }
+
+    private void checkNewTimetable() {
+        checkHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                String[] projection = {
+                        ApuClassContract.ApuClassEntry._ID,
+                        ApuClassContract.ApuClassEntry.COLUMN_CLASS_DAY,
+                        ApuClassContract.ApuClassEntry.COLUMN_CLASS_DATE,
+                        ApuClassContract.ApuClassEntry.COLUMN_CLASS_TIME,
+                        ApuClassContract.ApuClassEntry.COLUMN_CLASS_ROOM,
+                        ApuClassContract.ApuClassEntry.COLUMN_CLASS_LOCATION,
+                        ApuClassContract.ApuClassEntry.COLUMN_CLASS_SUBJECT,
+                        ApuClassContract.ApuClassEntry.COLUMN_CLASS_LECTURER
+                };
+
+                Cursor cursor = getContentResolver().query(ApuClassContract.ApuClassEntry.CONTENT_URI, projection, ApuClassContract.ApuClassEntry.COLUMN_CLASS_DATE + "=?", new String[]{MyDateUtils.formatDate(MyDateUtils.getMondayDate(), "dd-MMM-YYYY")}, null);
+                if (cursor != null && cursor.moveToFirst()) {
+                    Log.d(TAG, "ald have");
+                    cursor.close();
+                } else {
+                    Log.d(TAG, "refreshed");
+                    requestNewTimetable();
+                }
+                prefs.edit().putLong("last_update", System.currentTimeMillis()).apply();
+            }
+        });
+    }
+
+    private void requestNewTimetable() {
+        String toastText;
+        if (QueryUtils.isNetworkConnected(getApplicationContext())) {
+            //delete previous data
+            getContentResolver().delete(ApuClassContract.ApuClassEntry.CONTENT_URI, null, null);
+            Thread t = new Thread(new Runnable() {
+
+                @Override
+                public void run() {
+                    try {
+                        QueryUtils.getAllClass(prefs.getString(INTAKE_CODE_KEY, ""), getApplicationContext());
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            });
+            t.start();
+            try {
+                t.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            EventBus.getDefault().post(new DataChangeEvent());
+            toastText = "Refreshed";
+        } else {
+            toastText = "No Network!";
+        }
+        Toast.makeText(getApplicationContext(), toastText, Toast.LENGTH_SHORT).show();
+    }
+
+    private void showIntakeCodeEditTextDialog() {
+        new MaterialDialog.Builder(this)
+                .title(R.string.intake_code_title)
+                .content("Can be reset in Settings if needed.")
+                .inputType(InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS)
+                .alwaysCallInputCallback()
+                .positiveText(android.R.string.ok)
+                .input(
+                        null,
+                        null,
+                        false,
+                        new MaterialDialog.InputCallback() {
+                            @Override
+                            public void onInput(@NonNull MaterialDialog dialog, CharSequence input) {
+                                if (input.toString().trim().length() > 7) {
+
+                                    dialog.getActionButton(DialogAction.POSITIVE).setEnabled(true);
+                                } else {
+                                    dialog.getContentView().setText(R.string.invalid_intake_code_warning);
+                                    dialog.getActionButton(DialogAction.POSITIVE).setEnabled(false);
+                                }
+
+                            }
+                        })
+                .onPositive(new MaterialDialog.SingleButtonCallback() {
+                    @Override
+                    public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
+                        prefs.edit().putString(INTAKE_CODE_KEY, dialog.getInputEditText().getText().toString().trim().toUpperCase()).apply();
+                        requestNewTimetable();
+                    }
+                })
+                .show();
+
     }
 }

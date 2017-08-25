@@ -25,7 +25,8 @@
             android:authorities="com.shing.aputimetable"
             android:exported="false" />
 
-        <activity android:name=".SettingsActivity"></activity>
+        <activity android:name=".SettingsActivity" />
+        <activity android:name=".AboutActivity" />
     </application>
 
 </manifest>
