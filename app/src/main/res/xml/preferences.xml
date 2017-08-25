@@ -9,4 +9,11 @@
         android:key="@string/dark_theme_key"
         android:summary="@string/dark_theme_summary"
         android:title="@string/dark_theme_title" />
+    <MultiSelectListPreference
+        android:defaultValue="@array/class_default_value"
+        android:entries="@array/class_entries"
+        android:entryValues="@array/class_entry_values"
+        android:key="@string/class_filter_list_key"
+        android:summary="@string/class_filter_summary"
+        android:title="@string/class_filter_title" />
 </PreferenceScreen>

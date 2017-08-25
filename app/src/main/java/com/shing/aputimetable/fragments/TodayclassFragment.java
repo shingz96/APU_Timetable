@@ -72,9 +72,7 @@ public class TodayclassFragment extends Fragment implements LoaderManager.Loader
         RecyclerView.LayoutManager layoutManager = new LinearLayoutManager(getActivity());
         mRecyclerview.setLayoutManager(layoutManager);
         mRecyclerview.setAdapter(classDetailsAdapter);
-
         prefs = PreferenceManager.getDefaultSharedPreferences(getContext());
-
         String intake = prefs.getString(INTAKE_CODE_KEY, null);
         if (intake != null) {
             mSwipeRefreshLayout.setEnabled(true);
@@ -108,7 +106,8 @@ public class TodayclassFragment extends Fragment implements LoaderManager.Loader
         db.initData(data);
         classDetailsAdapter.setDataset(null);
         classDetailsAdapter.notifyDataSetChanged();
-        List todayClass = db.getDataByDay(MyDateUtils.getTodayIndex());
+        List<ApuClass> todayClass = db.getDataByDay(MyDateUtils.getTodayIndex());
+        todayClass = db.filter(todayClass, prefs);
         if (todayClass == null || todayClass.isEmpty()) {
             mRecyclerview.setVisibility(View.GONE);
             mEmptyTextView.setVisibility(View.VISIBLE);
