@@ -15,6 +15,7 @@ public class ApuClass implements Serializable {
     private String room;
     private String subject;
     private String lecturer;
+    private int type; // 0 = lecture, 1 = t1, 2 = t2, 3=lab1, 4=lab2, 5=lab3
 
     public String getDay() {
         return day;
@@ -76,5 +77,13 @@ public class ApuClass implements Serializable {
         return "{Day:" + day + ", Date:" + date + ", Time:" + time + ", Room:" + room
                 + ", Location:" + location + ", Subject:" + subject
                 + ", Lecturer:" + lecturer + "}";
+    }
+
+    public int getType() {
+        return type;
+    }
+
+    public void setType(int type) {
+        this.type = type;
     }
 }

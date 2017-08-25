@@ -22,7 +22,7 @@ public class ApuClassDbHelper extends SQLiteOpenHelper {
     /**
      * Database version. If you change the database schema, you must increment the database version.
      */
-    private static final int DATABASE_VERSION = 1;
+    private static final int DATABASE_VERSION = 2;
 
     /**
      * Constructs a new instance of {@link ApuClassDbHelper}.
@@ -44,14 +44,21 @@ public class ApuClassDbHelper extends SQLiteOpenHelper {
                 + ApuClassEntry.COLUMN_CLASS_ROOM + " TEXT NOT NULL, "
                 + ApuClassEntry.COLUMN_CLASS_LOCATION + " TEXT NOT NULL, "
                 + ApuClassEntry.COLUMN_CLASS_LECTURER + " TEXT NOT NULL, "
-                + ApuClassEntry.COLUMN_CLASS_SUBJECT + " TEXT NOT NULL);";
+                + ApuClassEntry.COLUMN_CLASS_SUBJECT + " TEXT NOT NULL, "
+                + ApuClassEntry.COLUMN_CLASS_TYPE + " INTEGER NOT NULL);";
 
         // Execute the SQL statement
         sqLiteDatabase.execSQL(SQL_CREATE_CLASS_TABLE);
     }
 
     @Override
-    public void onUpgrade(SQLiteDatabase sqLiteDatabase, int i, int i1) {
+    public void onUpgrade(SQLiteDatabase sqLiteDatabase, int oldVersion, int newVersion) {
+        String SQL_UPDATE_TABLE_V2 = "ALTER TABLE " + ApuClassEntry.TABLE_NAME
+                + " ADD COLUMN " + ApuClassEntry.COLUMN_CLASS_TYPE + " INTEGER";
 
+        switch (oldVersion) {
+            case 1:
+                sqLiteDatabase.execSQL(SQL_UPDATE_TABLE_V2);
+        }
     }
 }

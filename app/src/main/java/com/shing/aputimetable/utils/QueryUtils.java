@@ -10,6 +10,8 @@ import com.shing.aputimetable.entity.ApuClass;
 import com.shing.aputimetable.model.ApuClassContract.ApuClassEntry;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -33,7 +35,8 @@ public class QueryUtils {
             String content = getTimetableContent(html);
             return extractClass(content, context);
         } catch (Exception ex) {
-            System.out.println("Error extracting timetable: - no timetable found for this week!");
+            System.out.println("Error extracting timetable!");
+            ex.printStackTrace();
         }
         return null;
     }
@@ -83,6 +86,29 @@ public class QueryUtils {
             c.setSubject(classDetails.get(4).trim());
             c.setLecturer(classDetails.get(5).trim());
 
+            //set type
+            List<String> tmpList = Arrays.asList(classDetails.get(4).split("-"));
+            int typeValue = 0;
+            if (tmpList.size() >= 5) {
+                String type = tmpList.get(4);
+                type = type.trim();
+
+                if (type.equalsIgnoreCase("T") && tmpList.size() >= 6) {
+                    if (tmpList.get(5).trim().equals("1")) {
+                        typeValue = 1;
+                    } else {
+                        typeValue = 2;
+                    }
+                } else if (type.equalsIgnoreCase("LAB") && tmpList.size() >= 6) {
+                    if (tmpList.get(5).trim().equals("1")) {
+                        typeValue = 3;
+                    } else {
+                        typeValue = 4;
+                    }
+                }
+            }
+            c.setType(typeValue);
+
             //add to database
             ContentValues values = new ContentValues();
             values.put(ApuClassEntry.COLUMN_CLASS_DATE, c.getDate());
@@ -92,6 +118,7 @@ public class QueryUtils {
             values.put(ApuClassEntry.COLUMN_CLASS_LOCATION, c.getLocation());
             values.put(ApuClassEntry.COLUMN_CLASS_SUBJECT, c.getSubject());
             values.put(ApuClassEntry.COLUMN_CLASS_LECTURER, c.getLecturer());
+            values.put(ApuClassEntry.COLUMN_CLASS_TYPE, c.getType());
             context.getContentResolver().insert(ApuClassEntry.CONTENT_URI, values);
 
 

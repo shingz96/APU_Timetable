@@ -117,6 +117,13 @@ public class ApuClassContract {
          */
         public final static String COLUMN_CLASS_LECTURER = "lecturer";
 
+        /**
+         * Subject of the class.
+         * <p>
+         * Type: INTEGER
+         */
+        public final static String COLUMN_CLASS_TYPE = "type";
+
     }
 
 }

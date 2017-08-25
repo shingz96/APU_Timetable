@@ -57,7 +57,8 @@ public class ApuClassLoader extends AsyncTaskLoader<List<ApuClass>> {
                 ApuClassContract.ApuClassEntry.COLUMN_CLASS_ROOM,
                 ApuClassContract.ApuClassEntry.COLUMN_CLASS_LOCATION,
                 ApuClassContract.ApuClassEntry.COLUMN_CLASS_SUBJECT,
-                ApuClassContract.ApuClassEntry.COLUMN_CLASS_LECTURER
+                ApuClassContract.ApuClassEntry.COLUMN_CLASS_LECTURER,
+                ApuClassContract.ApuClassEntry.COLUMN_CLASS_TYPE
         };
 
         Cursor cursor = mContext.getContentResolver().query(ApuClassContract.ApuClassEntry.CONTENT_URI, projection, null, null, null);
@@ -74,6 +75,7 @@ public class ApuClassLoader extends AsyncTaskLoader<List<ApuClass>> {
                     c.setLocation(cursor.getString(cursor.getColumnIndex(ApuClassContract.ApuClassEntry.COLUMN_CLASS_LOCATION)));
                     c.setSubject(cursor.getString(cursor.getColumnIndex(ApuClassContract.ApuClassEntry.COLUMN_CLASS_SUBJECT)));
                     c.setLecturer(cursor.getString(cursor.getColumnIndex(ApuClassContract.ApuClassEntry.COLUMN_CLASS_LECTURER)));
+                    c.setType(cursor.getInt(cursor.getColumnIndex(ApuClassContract.ApuClassEntry.COLUMN_CLASS_TYPE)));
                     classes.add(c);
                     cursor.moveToNext();
                 }
