@@ -44,9 +44,15 @@
         See the License for the specific language governing permissions and limitations under the License."
     </string>
     <string name="invalid_intake_code_warning">"Are you sure this is a right intake code?"</string>
-    <string name="class_filter_summary">Choose the type of class to show</string>
+    <string name="type_filter_summary">Choose the type of class to show</string>
+    <string name="type_filter_title">Type Filter (Only for Today Class)</string>
+    <string name="type_filter_list_key">type_filter_list</string>
+    <string name="class_filter_summary">Choose the class to show (will override Type Filter)</string>
     <string name="class_filter_title">Class Filter (Only for Today Class)</string>
-    <string name="class_filter_list_key">filter_list</string>
+    <string name="class_filter_list_key">class_filter_list</string>
+    <string name="filter_key">filter</string>
+    <string name="filter_summary">Select your preferable filter</string>
+    <string name="filter_title">Filter Option</string>
 
     <!-- Setting Preference -->
     <string name="intake_code_summary">Please provide your intake code</string>

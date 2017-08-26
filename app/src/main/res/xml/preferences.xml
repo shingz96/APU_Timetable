@@ -9,11 +9,22 @@
         android:key="@string/dark_theme_key"
         android:summary="@string/dark_theme_summary"
         android:title="@string/dark_theme_title" />
+    <ListPreference
+        android:defaultValue="0"
+        android:entries="@array/filter_entries"
+        android:entryValues="@array/filter_entry_values"
+        android:key="@string/filter_key"
+        android:summary="@string/filter_summary"
+        android:title="@string/filter_title" />
     <MultiSelectListPreference
-        android:defaultValue="@array/class_default_value"
-        android:entries="@array/class_entries"
-        android:entryValues="@array/class_entry_values"
-        android:key="@string/class_filter_list_key"
+        android:defaultValue="@array/type_default_value"
+        android:entries="@array/type_entries"
+        android:entryValues="@array/type_entry_values"
+        android:key="@string/type_filter_list_key"
+        android:summary="@string/type_filter_summary"
+        android:title="@string/type_filter_title" />
+    <Preference
+        android:key="class_filter_prefs"
         android:summary="@string/class_filter_summary"
         android:title="@string/class_filter_title" />
 </PreferenceScreen>

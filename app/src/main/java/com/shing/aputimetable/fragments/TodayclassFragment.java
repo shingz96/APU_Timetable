@@ -11,18 +11,15 @@ import android.support.v4.content.Loader;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.shing.aputimetable.DataChangeEvent;
 import com.shing.aputimetable.R;
 import com.shing.aputimetable.adapters.ClassDetailsAdapter;
 import com.shing.aputimetable.entity.ApuClass;
-import com.shing.aputimetable.model.ApuClassContract;
 import com.shing.aputimetable.model.ApuClassLoader;
 import com.shing.aputimetable.model.Database;
 import com.shing.aputimetable.utils.MyDateUtils;
@@ -95,7 +92,6 @@ public class TodayclassFragment extends Fragment implements LoaderManager.Loader
     @Override
     public Loader<List<ApuClass>> onCreateLoader(int id, Bundle args) {
         String intake = prefs.getString(INTAKE_CODE_KEY, null);
-        Log.d(TAG, "Loader Create ");
         return new ApuClassLoader(getContext(), intake);
     }
 
@@ -107,7 +103,13 @@ public class TodayclassFragment extends Fragment implements LoaderManager.Loader
         classDetailsAdapter.setDataset(null);
         classDetailsAdapter.notifyDataSetChanged();
         List<ApuClass> todayClass = db.getDataByDay(MyDateUtils.getTodayIndex());
-        todayClass = db.filter(todayClass, prefs);
+
+        if (prefs.getString("filter", "0").equals("1")) {
+            todayClass = db.filterByClass(todayClass, prefs);
+        } else {
+            todayClass = db.filterByType(todayClass, prefs);
+        }
+
         if (todayClass == null || todayClass.isEmpty()) {
             mRecyclerview.setVisibility(View.GONE);
             mEmptyTextView.setVisibility(View.VISIBLE);
@@ -129,33 +131,7 @@ public class TodayclassFragment extends Fragment implements LoaderManager.Loader
 
     @Override
     public void onRefresh() {
-        String toastText;
-        if (QueryUtils.isNetworkConnected(getContext())) {
-            //delete previous data
-            Thread t = new Thread(new Runnable() {
-
-                @Override
-                public void run() {
-                    try {
-                        getActivity().getContentResolver().delete(ApuClassContract.ApuClassEntry.CONTENT_URI, null, null);
-                        QueryUtils.getAllClass(prefs.getString(INTAKE_CODE_KEY, ""), getActivity());
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                }
-            });
-            t.start();
-            try {
-                t.join();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            getLoaderManager().restartLoader(APU_CLASS_LOADER_ID, new Bundle(), this);
-            toastText = "Refreshed";
-        } else {
-            toastText = "No Network!";
-        }
-        Toast.makeText(getContext(), toastText, Toast.LENGTH_SHORT).show();
+        QueryUtils.requestNewTimetable(getActivity(), prefs);
         mSwipeRefreshLayout.setRefreshing(false);
     }
 

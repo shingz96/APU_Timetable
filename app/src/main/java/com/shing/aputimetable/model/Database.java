@@ -15,7 +15,7 @@ import java.util.Set;
 
 public class Database implements Serializable {
 
-    private static List<List<ApuClass>> db = new ArrayList();
+    private static List<List<ApuClass>> db = new ArrayList<>();
     private static List<ApuClass> mon = new ArrayList<>();
     private static List<ApuClass> tue = new ArrayList<>();
     private static List<ApuClass> wed = new ArrayList<>();
@@ -76,9 +76,9 @@ public class Database implements Serializable {
         return db.get(i);
     }
 
-    public List<ApuClass> filter(List<ApuClass> classDataset, SharedPreferences prefs) {
+    public List<ApuClass> filterByType(List<ApuClass> classDataset, SharedPreferences prefs) {
         List<ApuClass> filterDataset = new ArrayList<>();
-        Set<String> filterSet = prefs.getStringSet("filter_list", null);
+        Set<String> filterSet = prefs.getStringSet("type_filter_list", null);
         if (filterSet != null) {
             List<String> filterList = new ArrayList<>(filterSet);
             for (int i = 0; i < filterList.size(); i++) {
@@ -86,6 +86,27 @@ public class Database implements Serializable {
                 for (int j = 0; j < classDataset.size(); j++) {
                     ApuClass test = classDataset.get(j);
                     if (test.getType() == type) {
+                        filterDataset.add(test);
+                    }
+                }
+            }
+            sortClassByTime(filterDataset);
+        } else {
+            filterDataset = classDataset;
+        }
+        return filterDataset;
+    }
+
+    public List<ApuClass> filterByClass(List<ApuClass> classDataset, SharedPreferences prefs) {
+        List<ApuClass> filterDataset = new ArrayList<>();
+        Set<String> filterSet = prefs.getStringSet("class_filter_list", null);
+        if (filterSet != null) {
+            List<String> filterList = new ArrayList<>(filterSet);
+            for (int i = 0; i < filterList.size(); i++) {
+                String type = filterList.get(i);
+                for (int j = 0; j < classDataset.size(); j++) {
+                    ApuClass test = classDataset.get(j);
+                    if (test.getSubject().equals(type)) {
                         filterDataset.add(test);
                     }
                 }
