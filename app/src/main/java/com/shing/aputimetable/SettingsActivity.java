@@ -11,7 +11,6 @@ import android.support.annotation.NonNull;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.util.Log;
 import android.view.View;
 
 import com.afollestad.materialdialogs.DialogAction;
@@ -64,6 +63,10 @@ public class SettingsActivity extends AppCompatActivity {
         private final String INTAKE_CODE_KEY = "intake_code";
         private final String DARK_THEME_KEY = "dark_theme";
         private final String FILTER_KEY = "filter";
+        private final String TYPE_FILTER_KEY = "type_filter_list";
+        private final String CLASS_FILTER_PREFS = "class_filter_prefs";
+        private final String CLASS_FILTER_KEY = "class_filter_list";
+        private final String CLASS_FILTER_VALUE_KEY = "class_filter_list_value";
         private SharedPreferences prefs;
 
         @Override
@@ -97,7 +100,7 @@ public class SettingsActivity extends AppCompatActivity {
                 }
             });
 
-            Preference classPreference = findPreference("class_filter_prefs");
+            Preference classPreference = findPreference(CLASS_FILTER_PREFS);
             classPreference.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
                 @Override
                 public boolean onPreferenceClick(Preference preference) {
@@ -106,13 +109,13 @@ public class SettingsActivity extends AppCompatActivity {
                 }
             });
 
-            ListPreference l = (ListPreference) findPreference("filter");
+            ListPreference l = (ListPreference) findPreference(FILTER_KEY);
             if (l.getValue().equals("0")) {
-                findPreference("type_filter_list").setEnabled(true);
-                findPreference("class_filter_prefs").setEnabled(false);
+                findPreference(TYPE_FILTER_KEY).setEnabled(true);
+                findPreference(CLASS_FILTER_PREFS).setEnabled(false);
             } else {
-                findPreference("type_filter_list").setEnabled(false);
-                findPreference("class_filter_prefs").setEnabled(true);
+                findPreference(TYPE_FILTER_KEY).setEnabled(false);
+                findPreference(CLASS_FILTER_PREFS).setEnabled(true);
             }
 
 
@@ -132,6 +135,7 @@ public class SettingsActivity extends AppCompatActivity {
 
         @Override
         public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
+            ListPreference l = (ListPreference) findPreference(FILTER_KEY);
             switch (key) {
                 case DARK_THEME_KEY:
                     getActivity().recreate();
@@ -142,18 +146,56 @@ public class SettingsActivity extends AppCompatActivity {
                     p.setText(p.getText().toUpperCase());
                     p.setSummary(p.getText());
                     QueryUtils.requestNewTimetable(getActivity(), prefs);
+                    prefs.edit()
+                            .remove(CLASS_FILTER_KEY)
+                            .remove(CLASS_FILTER_VALUE_KEY)
+                            .apply();
+                    l.setValue("0");
                     break;
                 case FILTER_KEY:
-                    ListPreference l = (ListPreference) findPreference(key);
                     if (l.getValue().equals("0")) {
-                        findPreference("type_filter_list").setEnabled(true);
-                        findPreference("class_filter_prefs").setEnabled(false);
+                        findPreference(TYPE_FILTER_KEY).setEnabled(true);
+                        findPreference(CLASS_FILTER_PREFS).setEnabled(false);
                     } else {
-                        findPreference("type_filter_list").setEnabled(false);
-                        findPreference("class_filter_prefs").setEnabled(true);
+                        findPreference(TYPE_FILTER_KEY).setEnabled(false);
+                        findPreference(CLASS_FILTER_PREFS).setEnabled(true);
                     }
                     break;
             }
+        }
+
+        private String[] sortClassBySubject(String[] input) {
+            int n = input.length;
+            String temp;
+            for (int i = 0; i < n; i++) {
+                for (int j = 1; j < (n - i); j++) {
+                    char c1 = 'Z', c2 = 'Z';
+                    String s1 = "", s2 = "";
+                    if (input[j - 1].split("-").length >= 4) {
+                        c1 = input[j - 1].split("-")[3].trim().charAt(0);
+                        s1 = input[j - 1].split("-")[3].trim();
+                    }
+                    if (input[j].split("-").length >= 4) {
+                        c2 = input[j].split("-")[3].trim().charAt(0);
+                        s2 = input[j].split("-")[3].trim();
+                    }
+                    if (c1 > c2) {
+                        //swap elements
+                        temp = input[j - 1];
+                        input[j - 1] = input[j];
+                        input[j] = temp;
+                    } else if (c1 == c2) {
+                        if (s1.equals(s2)) {
+                            if (input[j - 1].length() > input[j].length()) {
+                                temp = input[j - 1];
+                                input[j - 1] = input[j];
+                                input[j] = temp;
+                            }
+                        }
+                    }
+                }
+            }
+            return input;
         }
 
         private String[] addClassList() {
@@ -163,6 +205,7 @@ public class SettingsActivity extends AppCompatActivity {
                 for (int i = 0; i < classes.size(); i++) {
                     tmp.add(classes.get(i).getSubject());
                 }
+
                 //remove possible duplicate
                 Set<String> hs = new HashSet<>();
                 hs.addAll(tmp);
@@ -171,6 +214,7 @@ public class SettingsActivity extends AppCompatActivity {
 
                 String[] arr = new String[tmp.size()];
                 arr = tmp.toArray(arr);
+                arr = sortClassBySubject(arr);
                 return arr;
             }
             return null;
@@ -179,13 +223,18 @@ public class SettingsActivity extends AppCompatActivity {
         private void displayClassFilterDialog(CharSequence[] args) {
             if (args != null) {
                 //get selected from share preference
-                Set<String> precheck = prefs.getStringSet("class_filter_list_value", null);
-                Integer[] selected = null;
+                Set<String> precheck = prefs.getStringSet(CLASS_FILTER_VALUE_KEY, null);
+                Integer[] selected;
                 if (precheck != null) {
                     String[] tmp = precheck.toArray(new String[precheck.size()]);
                     selected = new Integer[precheck.size()];
                     for (int i = 0; i < tmp.length; i++) {
                         selected[i] = Integer.parseInt(tmp[i]);
+                    }
+                } else {
+                    selected = new Integer[args.length];
+                    for (int i = 0; i < selected.length; i++) {
+                        selected[i] = i;
                     }
                 }
 
@@ -212,13 +261,12 @@ public class SettingsActivity extends AppCompatActivity {
                                     for (int i = 0; i < indeces.size(); i++) {
                                         entries.add(items.get(indeces.get(i)).toString());
                                         values.add(String.valueOf(indeces.get(i)));
-                                        Log.d("EDIT", entries.get(i));
                                     }
                                     entrySet = new HashSet<>(entries);
                                     entryValueSet = new HashSet<>(values);
                                 }
-                                prefs.edit().putStringSet("class_filter_list", entrySet).apply();
-                                prefs.edit().putStringSet("class_filter_list_value", entryValueSet).apply();
+                                prefs.edit().putStringSet(CLASS_FILTER_KEY, entrySet).apply();
+                                prefs.edit().putStringSet(CLASS_FILTER_VALUE_KEY, entryValueSet).apply();
                                 dialog.dismiss();
                             }
                         })

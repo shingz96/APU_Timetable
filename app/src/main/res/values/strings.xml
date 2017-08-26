@@ -47,7 +47,7 @@
     <string name="type_filter_summary">Choose the type of class to show</string>
     <string name="type_filter_title">Type Filter (Only for Today Class)</string>
     <string name="type_filter_list_key">type_filter_list</string>
-    <string name="class_filter_summary">Choose the class to show (will override Type Filter)</string>
+    <string name="class_filter_summary">Choose the class to show</string>
     <string name="class_filter_title">Class Filter (Only for Today Class)</string>
     <string name="class_filter_list_key">class_filter_list</string>
     <string name="filter_key">filter</string>

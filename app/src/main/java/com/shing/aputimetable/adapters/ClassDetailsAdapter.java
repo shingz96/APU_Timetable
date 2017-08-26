@@ -10,6 +10,7 @@ import android.widget.TextView;
 import com.shing.aputimetable.R;
 import com.shing.aputimetable.entity.ApuClass;
 
+import java.text.DecimalFormat;
 import java.util.List;
 
 /**
@@ -24,7 +25,7 @@ public class ClassDetailsAdapter extends RecyclerView.Adapter<ClassDetailsAdapte
         mClassDataset = dataset;
     }
 
-    public void setDataset(List dataset) {
+    public void setDataset(List<ApuClass> dataset) {
         mClassDataset = dataset;
     }
 
@@ -38,7 +39,7 @@ public class ClassDetailsAdapter extends RecyclerView.Adapter<ClassDetailsAdapte
     public void onBindViewHolder(ClassDetailsHolder holder, int position) {
         if (mClassDataset != null) {
             holder.mTextViewSubject.setText(mClassDataset.get(position).getSubject());
-            holder.mTextViewTime.setText(mClassDataset.get(position).getTime());
+            holder.mTextViewTime.setText(formatTime(mClassDataset.get(position).getTime()));
             holder.mTextViewLocation.setText(mClassDataset.get(position).getRoom() + " - " + mClassDataset.get(position).getLocation());
             holder.mTextViewLecturer.setText(mClassDataset.get(position).getLecturer());
         }
@@ -48,6 +49,26 @@ public class ClassDetailsAdapter extends RecyclerView.Adapter<ClassDetailsAdapte
     @Override
     public int getItemCount() {
         return mClassDataset == null ? 0 : mClassDataset.size();
+    }
+
+    private String formatTime(String input) {
+        double start = Float.parseFloat(input.split("-")[0].trim().replace(":", "."));
+        double end = Float.parseFloat(input.split("-")[1].trim().replace(":", "."));
+        return convert24TimeTo12Time(start).replace(".", ":") + " - " + convert24TimeTo12Time(end).replace(".", ":");
+    }
+
+    private String convert24TimeTo12Time(double time) {
+        String timeStringIn12HourFormat;
+        DecimalFormat formatter = new DecimalFormat("00.00");
+        if (time >= 13) {
+            time = time - 12;
+            timeStringIn12HourFormat = formatter.format(time) + " PM";
+        } else if (time >= 12) {
+            timeStringIn12HourFormat = formatter.format(time) + " PM";
+        } else {
+            timeStringIn12HourFormat = formatter.format(time) + " AM";
+        }
+        return timeStringIn12HourFormat;
     }
 
     class ClassDetailsHolder extends RecyclerView.ViewHolder {
