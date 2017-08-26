@@ -2,12 +2,18 @@ package com.shing.aputimetable.utils;
 
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.util.Log;
+import android.widget.Toast;
 
+import com.shing.aputimetable.DataChangeEvent;
 import com.shing.aputimetable.entity.ApuClass;
+import com.shing.aputimetable.model.ApuClassContract;
 import com.shing.aputimetable.model.ApuClassContract.ApuClassEntry;
+
+import org.greenrobot.eventbus.EventBus;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -175,4 +181,35 @@ public class QueryUtils {
         // If there is a network connection, fetch data
         return networkInfo != null && networkInfo.isConnected();
     }
+
+    public static void requestNewTimetable(final Context context, final SharedPreferences prefs) {
+        String toastText;
+        if (QueryUtils.isNetworkConnected(context)) {
+            //delete previous data
+            Thread t = new Thread(new Runnable() {
+
+                @Override
+                public void run() {
+                    try {
+                        context.getContentResolver().delete(ApuClassContract.ApuClassEntry.CONTENT_URI, null, null);
+                        QueryUtils.getAllClass(prefs.getString("intake_code", ""), context);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            });
+            t.start();
+            try {
+                t.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            EventBus.getDefault().post(new DataChangeEvent());
+            toastText = "Refreshed";
+        } else {
+            toastText = "No Network!";
+        }
+        Toast.makeText(context, toastText, Toast.LENGTH_SHORT).show();
+    }
+
 }

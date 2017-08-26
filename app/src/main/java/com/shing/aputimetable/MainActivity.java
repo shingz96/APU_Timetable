@@ -18,7 +18,6 @@ import android.text.InputType;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.Toast;
 
 import com.afollestad.materialdialogs.DialogAction;
 import com.afollestad.materialdialogs.MaterialDialog;
@@ -236,41 +235,11 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                     cursor.close();
                 } else {
                     Log.d(TAG, "refreshed");
-                    requestNewTimetable();
+                    QueryUtils.requestNewTimetable(getApplicationContext(), prefs);
                 }
                 prefs.edit().putLong("last_update", System.currentTimeMillis()).apply();
             }
         });
-    }
-
-    private void requestNewTimetable() {
-        String toastText;
-        if (QueryUtils.isNetworkConnected(getApplicationContext())) {
-            //delete previous data
-            getContentResolver().delete(ApuClassContract.ApuClassEntry.CONTENT_URI, null, null);
-            Thread t = new Thread(new Runnable() {
-
-                @Override
-                public void run() {
-                    try {
-                        QueryUtils.getAllClass(prefs.getString(INTAKE_CODE_KEY, ""), getApplicationContext());
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                }
-            });
-            t.start();
-            try {
-                t.join();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            EventBus.getDefault().post(new DataChangeEvent());
-            toastText = "Refreshed";
-        } else {
-            toastText = "No Network!";
-        }
-        Toast.makeText(getApplicationContext(), toastText, Toast.LENGTH_SHORT).show();
     }
 
     private void showIntakeCodeEditTextDialog() {
@@ -301,10 +270,11 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                     @Override
                     public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
                         prefs.edit().putString(INTAKE_CODE_KEY, dialog.getInputEditText().getText().toString().trim().toUpperCase()).apply();
-                        requestNewTimetable();
+                        QueryUtils.requestNewTimetable(getApplicationContext(), prefs);
                         View todayClassFragmentView = getSupportFragmentManager().findFragmentByTag("todayclass").getView();
                         if (todayClassFragmentView != null) {
                             todayClassFragmentView.findViewById(R.id.swipe_refresh_layout_class).setEnabled(true);
+
                         }
                     }
                 })
