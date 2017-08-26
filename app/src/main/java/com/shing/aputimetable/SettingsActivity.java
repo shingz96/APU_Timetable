@@ -169,8 +169,10 @@ public class SettingsActivity extends AppCompatActivity {
             String temp;
             for (int i = 0; i < n; i++) {
                 for (int j = 1; j < (n - i); j++) {
-                    char c1 = 'Z', c2 = 'Z';
-                    String s1 = "", s2 = "";
+                    char c1 = 'Z'; 
+                    char c2 = 'Z';
+                    String s1 = "";
+                    String s2 = "";
                     if (input[j - 1].split("-").length >= 4) {
                         c1 = input[j - 1].split("-")[3].trim().charAt(0);
                         s1 = input[j - 1].split("-")[3].trim();
@@ -184,14 +186,10 @@ public class SettingsActivity extends AppCompatActivity {
                         temp = input[j - 1];
                         input[j - 1] = input[j];
                         input[j] = temp;
-                    } else if (c1 == c2) {
-                        if (s1.equals(s2)) {
-                            if (input[j - 1].length() > input[j].length()) {
+                    } else if (c1 == c2 && s1.equals(s2) && (input[j - 1].length() > input[j].length())) {
                                 temp = input[j - 1];
                                 input[j - 1] = input[j];
                                 input[j] = temp;
-                            }
-                        }
                     }
                 }
             }
